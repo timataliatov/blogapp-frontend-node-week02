@@ -1,25 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import Header from './components/Header';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './components/ThemeProvider';
+import Layout from './components/Layout';
 import PostForm from './components/PostForm';
 import PostList from './components/PostList';
-import Footer from './components/Footer';
+import LoginPage from './components/LoginPage';
+import LandingPage from './components/LandingPage';
+import { fetchPosts, createPost } from './api/posts';
 
 function App() {
   const [posts, setPosts] = useState([]);
-  const [theme, setTheme] = useState('light');
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    fetchPosts();
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    setTheme(savedTheme);
-    document.documentElement.setAttribute('data-theme', savedTheme);
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+    loadPosts();
   }, []);
 
-  const fetchPosts = async () => {
+  const loadPosts = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/api/posts');
-      setPosts(response.data);
+      const fetchedPosts = await fetchPosts();
+      setPosts(fetchedPosts);
     } catch (error) {
       console.error('Error fetching posts:', error);
     }
@@ -27,29 +31,46 @@ function App() {
 
   const handleCreatePost = async (postData) => {
     try {
-      await axios.post('http://localhost:3000/api/posts', { ...postData, user_id: 1 });
-      fetchPosts();
+      await createPost(postData);
+      await loadPosts();
     } catch (error) {
       console.error('Error creating post:', error);
     }
   };
 
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
+  const handleLogin = (userData) => {
+    setUser(userData);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    setUser(null);
   };
 
   return (
-    <div className="min-h-screen bg-base-200 transition-colors duration-300">
-      <Header toggleTheme={toggleTheme} theme={theme} />
-      <main className="container mx-auto px-4 py-8">
-        <PostForm onSubmit={handleCreatePost} />
-        <PostList posts={posts} />
-      </main>
-      <Footer />
-    </div>
+    <Router>
+      <ThemeProvider>
+        <Layout user={user} onLogout={handleLogout}>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={user ? <Navigate to="/posts" /> : <LoginPage onLogin={handleLogin} />} />
+            <Route
+              path="/posts"
+              element={
+                user ? (
+                  <>
+                    <PostForm onSubmit={handleCreatePost} />
+                    <PostList posts={posts} />
+                  </>
+                ) : (
+                  <Navigate to="/login" />
+                )
+              }
+            />
+          </Routes>
+        </Layout>
+      </ThemeProvider>
+    </Router>
   );
 }
 

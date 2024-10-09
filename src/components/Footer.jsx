@@ -33,7 +33,7 @@ const Footer = () => {
         <div className="mt-8 pt-4 border-t border-base-content/10 text-center text-sm">
           <p>© 2023 Your Company Name. All rights reserved.</p>
           <p className="mt-2 flex items-center justify-center">
-            Made with <FaHeart className="text-red-500 mx-1" /> by Your Team
+            Made with <FaHeart className="text-red-500 mx-1" /> by timataliatov
           </p>
         </div>
       </div>
